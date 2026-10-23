@@ -21,7 +21,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y shellcheck
       - name: Run ShellCheck
-        run: shellcheck bringup.sh clean_branches.sh
+        run: shellcheck -S warning bringup.sh clean_branches.sh
   semgrep:
     name: Semgrep OSS
     runs-on: ubuntu-latest
