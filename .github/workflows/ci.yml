@@ -1,0 +1,46 @@
+---
+name: CI
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  shell-validation:
+    name: ShellCheck and syntax
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Bash syntax
+        run: bash -n bringup.sh clean_branches.sh
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y shellcheck
+      - name: Run ShellCheck
+        run: shellcheck bringup.sh clean_branches.sh
+  semgrep:
+    name: Semgrep OSS
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:1.182.0
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor != 'github-actions[bot]'
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Semgrep
+        id: semgrep
+        run: semgrep --config p/default --jobs 1 --sarif --output=semgrep.sarif
+      - name: Upload SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() && steps.semgrep.outcome == 'success'
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
