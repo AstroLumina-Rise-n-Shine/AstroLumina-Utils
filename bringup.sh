@@ -105,7 +105,13 @@ abort() { printf '\n[bringup] ABORT: %s\n' "$1" >&2; exit 1; }
 
 # Stop on the first failed command; explain what to do next. Commands that
 # are allowed to fail are explicitly guarded with `|| ...` where used.
-trap 'rc=$?; printf "\n[bringup] ABORT: a command failed (exit %s)\n[bringup]   STEP: %s\n[bringup]   CMD:  %s\n[bringup] Fix the problem, then re-run: ./bringup.sh %s\n" "$rc" "$CURRENT" "${LAST_CMD:-?}" "$ENV" >&2; exit "$rc"' ERR
+report_failure() {
+  local rc=$?
+  printf "\n[bringup] ABORT: a command failed (exit %s)\n[bringup]   STEP: %s\n[bringup]   CMD:  %s\n[bringup] Fix the problem, then re-run: ./bringup.sh %s\n" \
+    "$rc" "$CURRENT" "${LAST_CMD:-?}" "$ENV" >&2
+  exit "$rc"
+}
+trap report_failure ERR
 
 STEP=0
 CURRENT=""
