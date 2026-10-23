@@ -1,0 +1,85 @@
+---
+name: CI
+on:  # yamllint disable-line rule:truthy
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  shell-validation:
+    name: ShellCheck and syntax
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Check Bash syntax
+        run: bash -n bringup.sh clean_branches.sh
+      - name: Install ShellCheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y shellcheck
+      - name: Run ShellCheck
+        run: shellcheck -S warning bringup.sh clean_branches.sh
+  semgrep:
+    name: Semgrep OSS
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:1.182.0
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.actor != 'github-actions[bot]'
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Run Semgrep
+        id: semgrep
+        run: semgrep --config p/default --jobs 1 --sarif --output=semgrep.sarif
+      - name: Upload SARIF to GitHub
+        uses: github/codeql-action/upload-sarif@87ef0dc97def48aa960fbf026a2563ee9dbdb470 # v3
+        if: always() && steps.semgrep.outcome == 'success'
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+  codeql:
+    name: CodeQL (GitHub Actions)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: github/codeql-action/init@87ef0dc97def48aa960fbf026a2563ee9dbdb470 # v3
+        with:
+          languages: actions
+          queries: security-extended
+      - uses: github/codeql-action/analyze@87ef0dc97def48aa960fbf026a2563ee9dbdb470 # v3
+
+  trivy-config:
+    name: Trivy config
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "0"
+      - name: Upload SARIF to code scanning
+        if: always() && hashFiles('trivy-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@87ef0dc97def48aa960fbf026a2563ee9dbdb470 # v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
