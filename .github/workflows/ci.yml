@@ -22,6 +22,14 @@ jobs:
           sudo apt-get install --no-install-recommends -y shellcheck
       - name: Run ShellCheck
         run: shellcheck -S warning bringup.sh clean_branches.sh
+  script-tests:
+    name: Script unit tests
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Run clean_branches tests
+        run: bash tests/clean_branches_test.sh
   semgrep:
     name: Semgrep OSS
     runs-on: ubuntu-latest
