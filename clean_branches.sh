@@ -75,6 +75,11 @@ for dir in "$WORKSPACE_ROOT"/*/ "$WORKSPACE_ROOT"/.[!.]*/; do
   echo "=== ${repo} ================="
   echo "  path:   ${dir}"
 
+  if [ -n "$(git -C "$dir" status --porcelain)" ]; then
+    echo "  skip: working tree has uncommitted changes"
+    continue
+  fi
+
   # Move to the default branch before fetching and pulling: the sync is only
   # meaningful on main, and the stale-branch scan below must never treat the
   # feature branch we happen to sit on as worth keeping. A failed checkout
