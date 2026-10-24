@@ -137,6 +137,7 @@ mkdir -p "$WORKSPACE"
 
 make_repo "AstroLumina-Demo"
 make_repo ".github"
+make_repo "AstroLumina-Dirty"
 mkdir -p "${WORKSPACE}/AstroLumina-Terraform" # plain dir, no .git -> must be skipped
 
 for repo in \
@@ -145,6 +146,8 @@ for repo in \
   make_stale_branch "$repo" "$STALE"
   make_unpushed_branch "$repo" "$UNPUSHED"
 done
+
+printf 'preserve this local change\n' >>"${WORKSPACE}/AstroLumina-Dirty/README.md"
 TAINTED=1
 
 echo "=== clean_branches.sh --dry-run (workspace: ${WORKSPACE}) ==="
@@ -171,6 +174,9 @@ check "unpushed branch never reported (.github)"     output_lacks "'${UNPUSHED}'
 check "unpushed branch absent from output entirely"  output_lacks "${UNPUSHED}"
 check "fetch.prune=true set on demo repo"            fetch_prune_is_true "${WORKSPACE}/AstroLumina-Demo"
 check "fetch.prune=true set on .github repo"         fetch_prune_is_true "${WORKSPACE}/.github"
+check "dirty repo is skipped before checkout/fetch"  output_contains "skip: working tree has uncommitted changes"
+check "dirty repo is not configured for pruning"     test -z "$(git -C "${WORKSPACE}/AstroLumina-Dirty" config --local --get fetch.prune)"
+check "dirty repo keeps its local modification"      grep -qF "preserve this local change" "${WORKSPACE}/AstroLumina-Dirty/README.md"
 check "plain dir without .git is ignored"            output_lacks "AstroLumina-Terraform"
 check "dry-run deletes nothing: stale branch kept (demo)"     branch_exists "${WORKSPACE}/AstroLumina-Demo" "$STALE"
 check "dry-run deletes nothing: stale branch kept (.github)"  branch_exists "${WORKSPACE}/.github" "$STALE"
