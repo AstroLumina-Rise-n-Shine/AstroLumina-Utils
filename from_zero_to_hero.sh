@@ -493,7 +493,7 @@ step 'Verify ServiceMonitors + dashboards are loaded (ConfigMaps labelled grafan
 gate 'Check the laptop /etc/hosts entries for the UIs (read-only)' \
   "grep -nE '(argocd|grafana|prometheus)\\.k8s\\.astrolumina\\.ro' /etc/hosts"
 grep -nE '(argocd|grafana|prometheus)\.k8s\.astrolumina\.ro' /etc/hosts \
-  || printf '  (!) missing entries — add (with sudo):\n      192.168.122.11 argocd.k8s.astrolumina.ro prometheus.k8s.astrolumina.ro grafana.k8s.astrolumina.ro\n'
+  || printf '  (!) missing entries — add (with sudo):\n      192.168.200.211 argocd.k8s.astrolumina.ro prometheus.k8s.astrolumina.ro grafana.k8s.astrolumina.ro\n'
 
 # -- 4.7 production only: the Traefik dashboard basicAuth Secret ------------
 # The Helm chart only REFERENCES this Secret (templates/middlewares.yaml ->
